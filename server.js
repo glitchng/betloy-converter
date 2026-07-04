@@ -1,27 +1,17 @@
-require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
-const cors = require('cors');
 const path = require('path');
+require('dotenv').config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const BETLOY_API_KEY = process.env.BETLOY_API_KEY;
-const BASE_URL = 'https://betloy.com/api/v1';
 
-if (!BETLOY_API_KEY) {
-  console.error("❌ BETLOY_API_KEY is missing in environment variables");
-}
-
-// Convert endpoint
 app.post('/api/convert', async (req, res) => {
   try {
-    const response = await axios.post(`${BASE_URL}/convert`, req.body, {
+    const response = await axios.post('https://betloy.com/api/v1/convert', req.body, {
       headers: {
         'Authorization': `Bearer ${BETLOY_API_KEY}`,
         'Content-Type': 'application/json'
@@ -29,18 +19,13 @@ app.post('/api/convert', async (req, res) => {
     });
     res.json(response.data);
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(error.response?.status || 500).json({
-      success: false,
-      message: error.response?.data?.message || 'Conversion failed'
-    });
+    res.status(500).json({ success: false, message: error.response?.data?.message || 'Error' });
   }
 });
 
-// Bookmakers list
 app.get('/api/bookmakers', async (req, res) => {
   try {
-    const response = await axios.get(`${BASE_URL}/bookmakers`, {
+    const response = await axios.get('https://betloy.com/api/v1/bookmakers', {
       headers: { 'Authorization': `Bearer ${BETLOY_API_KEY}` }
     });
     res.json(response.data);
@@ -49,6 +34,5 @@ app.get('/api/bookmakers', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running`));
