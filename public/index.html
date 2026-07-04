@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Betloy Converter</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f8fafc; }
+    h1 { text-align: center; color: #1e2937; }
+    label { display: block; margin: 15px 0 5px; font-weight: bold; }
+    input, select, button { padding: 14px; margin: 8px 0; width: 100%; font-size: 16px; border-radius: 8px; border: 1px solid #cbd5e1; }
+    button { background: #0066ff; color: white; font-weight: bold; cursor: pointer; border: none; }
+    button:hover { background: #0052cc; }
+    .result { margin-top: 25px; padding: 20px; border-radius: 12px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 100px; }
+    .error { background: #fee2e2; color: #b91c1c; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Betloy Bet Code Converter</h1>
+  
+  <label>From Bookmaker</label>
+  <select id="from"></select>
+
+  <label>To Bookmaker</label>
+  <select id="to"></select>
+
+  <label>Booking Code</label>
+  <input type="text" id="code" placeholder="Enter booking code (e.g. B3US96U)" value="B3US96U">
+
+  <button onclick="convertCode()">Convert Now</button>
+
+  <div id="result" class="result"></div>
+
+  <script>
+    let bookmakers = [];
+
+    async function loadBookmakers() {
+      try {
+        const res = await fetch('/api/bookmakers');
+        const data = await res.json();
+        bookmakers = data;
+
+        const fromSelect = document.getElementById('from');
+        const toSelect = document.getElementById('to');
+
+        data.forEach(b => {
+          fromSelect.add(new Option(b.name || b.title, b.id));
+          toSelect.add(new Option(b.name || b.title, b.id));
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function convertCode() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<p>Converting...</p>';
+
+      try {
+        const response = await fetch('/api/convert', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            booking_code: document.getElementById('code').value.trim(),
+            from_bookie_id: parseInt(document.getElementById('from').value),
+            to_bookie_id: parseInt(document.getElementById('to').value)
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.innerHTML = `
+            <h2>✅ ${data.data.converted_code}</h2>
+            <p><strong>From:</strong> ${data.data.from_bookie} → <strong>To:</strong> ${data.data.to_bookie}</p>
+            <p><strong>Total Odds:</strong> ${data.data.total_odds}</p>
+            <p><strong>Events:</strong> ${data.data.number_of_events}</p>
+          `;
+        } else {
+          resultDiv.classList.add('error');
+          resultDiv.innerHTML = `<strong>Error:</strong> ${data.message}`;
+        }
+      } catch (err) {
+        resultDiv.classList.add('error');
+        resultDiv.innerHTML = 'Network error. Please try again.';
+      }
+    }
+
+    // Load bookmakers when page loads
+    window.onload = loadBookmakers;
+  </script>
+</body>
+</html>
